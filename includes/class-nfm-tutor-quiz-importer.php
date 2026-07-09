@@ -108,8 +108,8 @@ class NFM_Tutor_Quiz_Importer {
 				static function ( $quiz ) {
 					return array(
 						'quiz_id'     => (int) $quiz->quiz_id,
-						'quiz_title'  => wp_strip_all_tags( $quiz->quiz_title ),
-						'topic_title' => wp_strip_all_tags( $quiz->topic_title ),
+						'quiz_title'  => sanitize_text_field( $quiz->quiz_title ),
+						'topic_title' => sanitize_text_field( $quiz->topic_title ),
 					);
 				},
 				$course_quizzes
@@ -317,7 +317,7 @@ class NFM_Tutor_Quiz_Importer {
 						var quizSelect = document.getElementById("nfm_quiz_id");
 						var quizHelp = document.getElementById("nfm_quiz_help");
 						var configElement = document.getElementById("nfm-quiz-importer-config");
-						var selectedQuiz = "";
+						var selectedQuiz = 0;
 						var config = {};
 						var quizzesByCourse = {};
 						var messages = {};
@@ -333,7 +333,7 @@ class NFM_Tutor_Quiz_Importer {
 							return;
 						}
 
-						selectedQuiz = quizSelect.getAttribute("data-selected-quiz") || "";
+						selectedQuiz = parseInt(quizSelect.getAttribute("data-selected-quiz") || "0", 10) || 0;
 
 						try {
 							config = JSON.parse(configElement.textContent || "{}");
@@ -353,7 +353,6 @@ class NFM_Tutor_Quiz_Importer {
 							var courseId = courseSelect.value;
 							var quizzes = quizzesByCourse[courseId] || [];
 							var selectedQuizFound = false;
-							var selectedQuizId = selectedQuiz ? parseInt(selectedQuiz, 10) : NaN;
 							var placeholder = document.createElement("option");
 
 							quizSelect.innerHTML = "";
@@ -386,7 +385,7 @@ class NFM_Tutor_Quiz_Importer {
 								option.value = String(quiz.quiz_id);
 								option.textContent = buildQuizLabel(quiz);
 
-								if (!Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
+								if (selectedQuiz > 0 && quiz.quiz_id === selectedQuiz) {
 									option.selected = true;
 									selectedQuizFound = true;
 								}
@@ -400,7 +399,7 @@ class NFM_Tutor_Quiz_Importer {
 						}
 
 						courseSelect.addEventListener('change', function() {
-							selectedQuiz = '';
+							selectedQuiz = 0;
 							renderQuizOptions();
 						});
 
