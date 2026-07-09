@@ -297,7 +297,7 @@ class NFM_Tutor_Quiz_Importer {
 					</table>
 					<?php submit_button( esc_html__( 'Import questions into the selected quiz', 'tutor-lms-quiz-importer' ), 'primary', 'nfm_tutor_import_submit' ); ?>
 				</form>
-				<script type="application/json" id="nfm-quiz-importer-config"><?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ) ); ?></script>
+				<script type="application/json" id="nfm-quiz-importer-config"><?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?></script>
 				<script>
 					document.addEventListener('DOMContentLoaded', function() {
 						var courseSelect = document.getElementById('nfm_course_id');
@@ -310,7 +310,7 @@ class NFM_Tutor_Quiz_Importer {
 						var messages = {};
 
 						if (!courseSelect || !quizSelect || !quizHelp || !configElement) {
-							window.console && window.console.warn && window.console.warn('Tutor LMS Quiz Importer: course/quiz UI configuration was not found.');
+							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: course/quiz UI configuration was not found.");
 							return;
 						}
 
@@ -319,7 +319,7 @@ class NFM_Tutor_Quiz_Importer {
 						try {
 							config = JSON.parse(configElement.textContent || '{}');
 						} catch (error) {
-							window.console && window.console.warn && window.console.warn('Tutor LMS Quiz Importer: invalid quiz configuration payload.', error);
+							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error);
 							return;
 						}
 
@@ -393,7 +393,7 @@ class NFM_Tutor_Quiz_Importer {
 	}
 
 	private function handle_import() {
-		if ( ! isset( $_POST['nfm_tutor_import_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['nfm_tutor_import_nonce'] ), 'nfm_tutor_import_action' ) ) {
+		if ( ! isset( $_POST['nfm_tutor_import_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nfm_tutor_import_nonce'] ) ), 'nfm_tutor_import_action' ) ) {
 			return array( 'type' => 'error', 'message' => esc_html__( 'Invalid nonce. Please try again.', 'tutor-lms-quiz-importer' ) );
 		}
 
