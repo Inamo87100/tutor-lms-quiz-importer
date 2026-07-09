@@ -299,7 +299,15 @@ class NFM_Tutor_Quiz_Importer {
 					<?php submit_button( esc_html__( 'Import questions into the selected quiz', 'tutor-lms-quiz-importer' ), 'primary', 'nfm_tutor_import_submit' ); ?>
 				</form>
 				<script type="application/json" id="nfm-quiz-importer-config">
-					<?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>
+					<?php
+					echo wp_json_encode(
+						array(
+							'quizzesByCourse' => $quizzes_by_course,
+							'messages'        => $quiz_messages,
+						),
+						JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+					);
+					?>
 				</script>
 				<script>
 					document.addEventListener("DOMContentLoaded", function() {
@@ -312,8 +320,14 @@ class NFM_Tutor_Quiz_Importer {
 						var quizzesByCourse = {};
 						var messages = {};
 
+						function warn(message, detail) {
+							if (window.console && window.console.warn) {
+								window.console.warn(message, detail);
+							}
+						}
+
 						if (!courseSelect || !quizSelect || !quizHelp || !configElement) {
-							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: course/quiz UI configuration was not found.");
+							warn("Tutor LMS Quiz Importer: course/quiz UI configuration was not found.");
 							return;
 						}
 
@@ -322,7 +336,7 @@ class NFM_Tutor_Quiz_Importer {
 						try {
 							config = JSON.parse(configElement.textContent || "{}");
 						} catch (error) {
-							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error.message);
+							warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error.message);
 							return;
 						}
 
@@ -379,7 +393,7 @@ class NFM_Tutor_Quiz_Importer {
 							});
 
 							if (!selectedQuizFound) {
-								quizSelect.value = '';
+								quizSelect.value = "";
 							}
 						}
 
