@@ -108,8 +108,8 @@ class NFM_Tutor_Quiz_Importer {
 				static function ( $quiz ) {
 					return array(
 						'quiz_id'     => (int) $quiz->quiz_id,
-						'quiz_title'  => $quiz->quiz_title,
-						'topic_title' => $quiz->topic_title,
+						'quiz_title'  => wp_strip_all_tags( $quiz->quiz_title ),
+						'topic_title' => wp_strip_all_tags( $quiz->topic_title ),
 					);
 				},
 				$course_quizzes
@@ -185,10 +185,9 @@ class NFM_Tutor_Quiz_Importer {
 			$result = $this->handle_import();
 		}
 
-		$request            = $_POST;
 		$courses            = $this->get_courses();
-		$selected_course_id = $this->get_request_course_id( $request );
-		$selected_quiz_id   = $this->get_request_quiz_id( $request );
+		$selected_course_id = $this->get_request_course_id( $_POST );
+		$selected_quiz_id   = $this->get_request_quiz_id( $_POST );
 		$quizzes            = $selected_course_id ? $this->get_course_quizzes( $selected_course_id ) : array();
 		$quizzes_by_course  = $this->get_quizzes_by_course( $courses );
 		$select_style       = 'min-width: 520px; max-width: 100%;';
@@ -245,7 +244,7 @@ class NFM_Tutor_Quiz_Importer {
 						<tr>
 							<th scope="row"><label for="nfm_quiz_id"><?php echo esc_html__( 'Destination quiz', 'tutor-lms-quiz-importer' ); ?></label></th>
 							<td>
-								<select name="nfm_quiz_id" id="nfm_quiz_id" required style="<?php echo esc_attr( $select_style ); ?>" data-selected-quiz="<?php echo esc_attr( $selected_quiz_id ); ?>" <?php disabled( ! $selected_course_id || empty( $quizzes ) ); ?>>
+								<select name="nfm_quiz_id" id="nfm_quiz_id" required style="<?php echo esc_attr( $select_style ); ?>" data-selected-quiz="<?php echo esc_attr( $selected_quiz_id ); ?>" aria-describedby="nfm_quiz_help" <?php disabled( ! $selected_course_id || empty( $quizzes ) ); ?>>
 									<option value="">
 										<?php
 										echo esc_html(
@@ -311,6 +310,8 @@ class NFM_Tutor_Quiz_Importer {
 				</script>
 				<script>
 					document.addEventListener("DOMContentLoaded", function() {
+						"use strict";
+
 						var courseSelect = document.getElementById("nfm_course_id");
 						var quizSelect = document.getElementById("nfm_quiz_id");
 						var quizHelp = document.getElementById("nfm_quiz_help");
@@ -351,7 +352,7 @@ class NFM_Tutor_Quiz_Importer {
 							var courseId = courseSelect.value;
 							var quizzes = quizzesByCourse[courseId] || [];
 							var selectedQuizFound = false;
-							var selectedQuizId = parseInt(selectedQuiz, 10);
+							var selectedQuizId = selectedQuiz ? parseInt(selectedQuiz, 10) : null;
 							var placeholder = document.createElement("option");
 
 							quizSelect.innerHTML = "";
@@ -384,7 +385,7 @@ class NFM_Tutor_Quiz_Importer {
 								option.value = String(quiz.quiz_id);
 								option.textContent = buildQuizLabel(quiz);
 
-								if (!Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
+								if (null !== selectedQuizId && !Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
 									option.selected = true;
 									selectedQuizFound = true;
 								}
