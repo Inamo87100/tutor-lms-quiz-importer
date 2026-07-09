@@ -191,6 +191,7 @@ class NFM_Tutor_Quiz_Importer {
 		$selected_quiz_id   = $this->get_request_quiz_id( $request );
 		$quizzes            = $selected_course_id ? $this->get_course_quizzes( $selected_course_id ) : array();
 		$quizzes_by_course  = $this->get_quizzes_by_course( $courses );
+		$select_style       = 'min-width: 520px; max-width: 100%;';
 		$quiz_messages      = array(
 			'selectCourseFirst' => esc_html__( 'Select a Tutor LMS course first.', 'tutor-lms-quiz-importer' ),
 			'selectQuiz'        => esc_html__( '— Select a quiz —', 'tutor-lms-quiz-importer' ),
@@ -223,7 +224,7 @@ class NFM_Tutor_Quiz_Importer {
 						<tr>
 							<th scope="row"><label for="nfm_course_id"><?php echo esc_html__( 'Tutor LMS course', 'tutor-lms-quiz-importer' ); ?></label></th>
 							<td>
-								<select name="nfm_course_id" id="nfm_course_id" required style="min-width: 520px; max-width: 100%;">
+								<select name="nfm_course_id" id="nfm_course_id" required style="<?php echo esc_attr( $select_style ); ?>">
 									<option value=""><?php echo esc_html__( '— Select a course —', 'tutor-lms-quiz-importer' ); ?></option>
 									<?php foreach ( $courses as $course ) : ?>
 										<option value="<?php echo esc_attr( $course->ID ); ?>" <?php selected( $selected_course_id, $course->ID ); ?>>
@@ -244,7 +245,7 @@ class NFM_Tutor_Quiz_Importer {
 						<tr>
 							<th scope="row"><label for="nfm_quiz_id"><?php echo esc_html__( 'Destination quiz', 'tutor-lms-quiz-importer' ); ?></label></th>
 							<td>
-								<select name="nfm_quiz_id" id="nfm_quiz_id" required style="min-width: 520px; max-width: 100%;" data-selected-quiz="<?php echo esc_attr( $selected_quiz_id ); ?>" <?php disabled( ! $selected_course_id || empty( $quizzes ) ); ?>>
+								<select name="nfm_quiz_id" id="nfm_quiz_id" required style="<?php echo esc_attr( $select_style ); ?>" data-selected-quiz="<?php echo esc_attr( $selected_quiz_id ); ?>" <?php disabled( ! $selected_course_id || empty( $quizzes ) ); ?>>
 									<option value="">
 										<?php
 										echo esc_html(
@@ -297,14 +298,16 @@ class NFM_Tutor_Quiz_Importer {
 					</table>
 					<?php submit_button( esc_html__( 'Import questions into the selected quiz', 'tutor-lms-quiz-importer' ), 'primary', 'nfm_tutor_import_submit' ); ?>
 				</form>
-				<script type="application/json" id="nfm-quiz-importer-config"><?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?></script>
+				<script type="application/json" id="nfm-quiz-importer-config">
+					<?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>
+				</script>
 				<script>
-					document.addEventListener('DOMContentLoaded', function() {
-						var courseSelect = document.getElementById('nfm_course_id');
-						var quizSelect = document.getElementById('nfm_quiz_id');
-						var quizHelp = document.getElementById('nfm_quiz_help');
-						var configElement = document.getElementById('nfm-quiz-importer-config');
-						var selectedQuiz = '';
+					document.addEventListener("DOMContentLoaded", function() {
+						var courseSelect = document.getElementById("nfm_course_id");
+						var quizSelect = document.getElementById("nfm_quiz_id");
+						var quizHelp = document.getElementById("nfm_quiz_help");
+						var configElement = document.getElementById("nfm-quiz-importer-config");
+						var selectedQuiz = "";
 						var config = {};
 						var quizzesByCourse = {};
 						var messages = {};
@@ -314,12 +317,12 @@ class NFM_Tutor_Quiz_Importer {
 							return;
 						}
 
-						selectedQuiz = quizSelect.getAttribute('data-selected-quiz') || '';
+						selectedQuiz = quizSelect.getAttribute("data-selected-quiz") || "";
 
 						try {
-							config = JSON.parse(configElement.textContent || '{}');
+							config = JSON.parse(configElement.textContent || "{}");
 						} catch (error) {
-							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error);
+							window.console && window.console.warn && window.console.warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error.message);
 							return;
 						}
 
@@ -327,17 +330,18 @@ class NFM_Tutor_Quiz_Importer {
 						messages = config.messages || {};
 
 						function buildQuizLabel(quiz) {
-							return '[' + quiz.quiz_id + '] ' + quiz.quiz_title + ' — ' + messages.topicLabel + ' ' + quiz.topic_title;
+							return "[" + quiz.quiz_id + "] " + quiz.quiz_title + " — " + messages.topicLabel + " " + quiz.topic_title;
 						}
 
 						function renderQuizOptions() {
 							var courseId = courseSelect.value;
 							var quizzes = quizzesByCourse[courseId] || [];
 							var selectedQuizFound = false;
-							var placeholder = document.createElement('option');
+							var selectedQuizId = parseInt(selectedQuiz, 10);
+							var placeholder = document.createElement("option");
 
-							quizSelect.innerHTML = '';
-							placeholder.value = '';
+							quizSelect.innerHTML = "";
+							placeholder.value = "";
 
 							if (!courseId) {
 								placeholder.textContent = messages.selectCourseFirst;
@@ -361,12 +365,12 @@ class NFM_Tutor_Quiz_Importer {
 							quizHelp.textContent = messages.quizHelp;
 
 							quizzes.forEach(function(quiz) {
-								var option = document.createElement('option');
+								var option = document.createElement("option");
 
 								option.value = String(quiz.quiz_id);
 								option.textContent = buildQuizLabel(quiz);
 
-								if (selectedQuiz && String(quiz.quiz_id) === String(selectedQuiz)) {
+								if (!Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
 									option.selected = true;
 									selectedQuizFound = true;
 								}
