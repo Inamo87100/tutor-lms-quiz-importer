@@ -299,6 +299,7 @@ class NFM_Tutor_Quiz_Importer {
 				</form>
 				<script type="application/json" id="nfm-quiz-importer-config">
 					<?php
+					// Escape special characters so the JSON payload cannot break out of the script tag.
 					echo wp_json_encode(
 						array(
 							'quizzesByCourse' => $quizzes_by_course,
@@ -337,7 +338,7 @@ class NFM_Tutor_Quiz_Importer {
 						try {
 							config = JSON.parse(configElement.textContent || "{}");
 						} catch (error) {
-							warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error.message);
+							warn("Tutor LMS Quiz Importer: invalid quiz configuration payload.", error);
 							return;
 						}
 
@@ -352,7 +353,7 @@ class NFM_Tutor_Quiz_Importer {
 							var courseId = courseSelect.value;
 							var quizzes = quizzesByCourse[courseId] || [];
 							var selectedQuizFound = false;
-							var selectedQuizId = selectedQuiz ? parseInt(selectedQuiz, 10) : null;
+							var selectedQuizId = selectedQuiz ? parseInt(selectedQuiz, 10) : NaN;
 							var placeholder = document.createElement("option");
 
 							quizSelect.innerHTML = "";
@@ -385,7 +386,7 @@ class NFM_Tutor_Quiz_Importer {
 								option.value = String(quiz.quiz_id);
 								option.textContent = buildQuizLabel(quiz);
 
-								if (null !== selectedQuizId && !Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
+								if (!Number.isNaN(selectedQuizId) && quiz.quiz_id === selectedQuizId) {
 									option.selected = true;
 									selectedQuizFound = true;
 								}
