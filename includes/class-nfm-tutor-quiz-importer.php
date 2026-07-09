@@ -119,18 +119,26 @@ class NFM_Tutor_Quiz_Importer {
 		return $quizzes_by_course;
 	}
 
-	private function get_selected_quiz_id() {
-		return isset( $_POST['nfm_quiz_id'] ) ? absint( wp_unslash( $_POST['nfm_quiz_id'] ) ) : 0;
+	private function get_request_absint( $request, $key ) {
+		if ( ! is_array( $request ) || ! isset( $request[ $key ] ) ) {
+			return 0;
+		}
+
+		return absint( wp_unslash( $request[ $key ] ) );
 	}
 
-	private function get_selected_course_id() {
-		$course_id = isset( $_POST['nfm_course_id'] ) ? absint( wp_unslash( $_POST['nfm_course_id'] ) ) : 0;
+	private function get_request_quiz_id( $request ) {
+		return $this->get_request_absint( $request, 'nfm_quiz_id' );
+	}
+
+	private function get_request_course_id( $request ) {
+		$course_id = $this->get_request_absint( $request, 'nfm_course_id' );
 
 		if ( $course_id ) {
 			return $course_id;
 		}
 
-		$quiz_id = $this->get_selected_quiz_id();
+		$quiz_id = $this->get_request_quiz_id( $request );
 
 		if ( ! $quiz_id ) {
 			return 0;
@@ -177,9 +185,10 @@ class NFM_Tutor_Quiz_Importer {
 			$result = $this->handle_import();
 		}
 
+		$request            = $_POST;
 		$courses            = $this->get_courses();
-		$selected_course_id = $this->get_selected_course_id();
-		$selected_quiz_id   = $this->get_selected_quiz_id();
+		$selected_course_id = $this->get_request_course_id( $request );
+		$selected_quiz_id   = $this->get_request_quiz_id( $request );
 		$quizzes            = $selected_course_id ? $this->get_course_quizzes( $selected_course_id ) : array();
 		$quizzes_by_course  = $this->get_quizzes_by_course( $courses );
 		$quiz_messages      = array(
@@ -288,18 +297,34 @@ class NFM_Tutor_Quiz_Importer {
 					</table>
 					<?php submit_button( esc_html__( 'Import questions into the selected quiz', 'tutor-lms-quiz-importer' ), 'primary', 'nfm_tutor_import_submit' ); ?>
 				</form>
+				<script type="application/json" id="nfm-quiz-importer-config"><?php echo wp_json_encode( array( 'quizzesByCourse' => $quizzes_by_course, 'messages' => $quiz_messages ) ); ?></script>
 				<script>
 					document.addEventListener('DOMContentLoaded', function() {
 						var courseSelect = document.getElementById('nfm_course_id');
 						var quizSelect = document.getElementById('nfm_quiz_id');
 						var quizHelp = document.getElementById('nfm_quiz_help');
-						var selectedQuiz = quizSelect.getAttribute('data-selected-quiz') || '';
-						var quizzesByCourse = <?php echo wp_json_encode( $quizzes_by_course ); ?>;
-						var messages = <?php echo wp_json_encode( $quiz_messages ); ?>;
+						var configElement = document.getElementById('nfm-quiz-importer-config');
+						var selectedQuiz = '';
+						var config = {};
+						var quizzesByCourse = {};
+						var messages = {};
 
-						if (!courseSelect || !quizSelect || !quizHelp) {
+						if (!courseSelect || !quizSelect || !quizHelp || !configElement) {
+							window.console && window.console.warn && window.console.warn('Tutor LMS Quiz Importer: course/quiz UI configuration was not found.');
 							return;
 						}
+
+						selectedQuiz = quizSelect.getAttribute('data-selected-quiz') || '';
+
+						try {
+							config = JSON.parse(configElement.textContent || '{}');
+						} catch (error) {
+							window.console && window.console.warn && window.console.warn('Tutor LMS Quiz Importer: invalid quiz configuration payload.', error);
+							return;
+						}
+
+						quizzesByCourse = config.quizzesByCourse || {};
+						messages = config.messages || {};
 
 						function buildQuizLabel(quiz) {
 							return '[' + quiz.quiz_id + '] ' + quiz.quiz_title + ' — ' + messages.topicLabel + ' ' + quiz.topic_title;
@@ -368,7 +393,7 @@ class NFM_Tutor_Quiz_Importer {
 	}
 
 	private function handle_import() {
-		if ( ! isset( $_POST['nfm_tutor_import_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nfm_tutor_import_nonce'] ) ), 'nfm_tutor_import_action' ) ) {
+		if ( ! isset( $_POST['nfm_tutor_import_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['nfm_tutor_import_nonce'] ), 'nfm_tutor_import_action' ) ) {
 			return array( 'type' => 'error', 'message' => esc_html__( 'Invalid nonce. Please try again.', 'tutor-lms-quiz-importer' ) );
 		}
 
@@ -376,12 +401,8 @@ class NFM_Tutor_Quiz_Importer {
 			return array( 'type' => 'error', 'message' => esc_html__( 'Insufficient permissions.', 'tutor-lms-quiz-importer' ) );
 		}
 
-		$course_id = isset( $_POST['nfm_course_id'] ) ? absint( wp_unslash( $_POST['nfm_course_id'] ) ) : 0;
-		$quiz_id   = $this->get_selected_quiz_id();
-
-		if ( ! $course_id && $quiz_id ) {
-			$course_id = $this->get_course_id_for_quiz( $quiz_id );
-		}
+		$course_id = $this->get_request_course_id( $_POST );
+		$quiz_id   = $this->get_request_quiz_id( $_POST );
 
 		if ( ! $course_id || ! $this->is_valid_course( $course_id ) ) {
 			return array( 'type' => 'error', 'message' => esc_html__( 'Please select a valid Tutor LMS course.', 'tutor-lms-quiz-importer' ) );
